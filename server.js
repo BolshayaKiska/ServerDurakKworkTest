@@ -36,7 +36,9 @@ console.log(`Server started on port ${port}`);
 
 // Автоматический запуск игры при подключении второго игрока
 function tryStartGame() {
+  console.log(`tryStartGame check: ${clients.size} players`);
   if (clients.size >= 2 && !gameInProgress) {
+      console.log('Starting game...');
     startGame();
   }
 }
@@ -225,3 +227,4 @@ wss.on('connection', (ws) => {
     // Можно добавить логику для завершения игры
   });
 });
+
