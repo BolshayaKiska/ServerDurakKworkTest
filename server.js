@@ -44,6 +44,7 @@ function tryStartGame() {
 }
 
 function startGame() {
+  console.log('startGame() вызван');
   deck = createDeck();
   tableCards = [];
   gameInProgress = true;
@@ -56,12 +57,14 @@ function startGame() {
       player.hand.push(deck.pop());
     }
     send(ws, { type: 'your_hand', hand: player.hand });
+    console.log(`Отправлена рука игроку: ${player.hand.length} карт`);
   });
 
   // Определение козыря
   trumpCard = deck.pop();
   deck.unshift(trumpCard);
   broadcast({ type: 'trump', card: trumpCard });
+  console.log(`Козырь: ${trumpCard.suit} ${trumpCard.rank}`);
 
   // Порядок ходов
   currentPlayerOrder = Array.from(clients.keys());
@@ -227,4 +230,5 @@ wss.on('connection', (ws) => {
     // Можно добавить логику для завершения игры
   });
 });
+
 
