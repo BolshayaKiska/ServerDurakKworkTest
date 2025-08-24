@@ -1,4 +1,3 @@
-// server.js
 const WebSocket = require('ws');
 
 const port = 8080;
@@ -35,12 +34,20 @@ const playersScores = new Map();
 
 console.log(`Server started on port ${port}`);
 
+// Автоматический запуск игры при подключении второго игрока
+function tryStartGame() {
+  if (clients.size >= 2 && !gameInProgress) {
+    startGame();
+  }
+}
+
 function startGame() {
   deck = createDeck();
   tableCards = [];
   gameInProgress = true;
   playersScores.clear();
 
+  // Раздача карт
   clients.forEach((player, ws) => {
     player.hand = [];
     for (let i=0; i<6; i++) {
@@ -49,14 +56,17 @@ function startGame() {
     send(ws, { type: 'your_hand', hand: player.hand });
   });
 
+  // Определение козыря
   trumpCard = deck.pop();
   deck.unshift(trumpCard);
   broadcast({ type: 'trump', card: trumpCard });
 
+  // Порядок ходов
   currentPlayerOrder = Array.from(clients.keys());
   attackerIndex = 0;
   defenderIndex = 1;
 
+  // Начать первый ход
   nextTurn();
 }
 
@@ -67,6 +77,7 @@ function nextTurn() {
   }
   const attackerWS = currentPlayerOrder[attackerIndex];
   const defenderWS = currentPlayerOrder[defenderIndex];
+
   send(attackerWS, { type: 'your_turn', role: 'attack' });
   send(defenderWS, { type: 'waiting', message: 'Ждите своей очереди' });
 }
@@ -130,6 +141,7 @@ function getTableCards() {
 }
 
 function endRound() {
+  // Подсчет очков
   clients.forEach((player, ws) => {
     if (player.hand.length > 0) {
       let score = playersScores.get(ws) || 0;
@@ -137,16 +149,12 @@ function endRound() {
       playersScores.set(ws, score);
     }
   });
+  // Отправка итогов
   clients.forEach((player, ws) => {
     send(ws, {
       type: 'round_end',
-      scores: Array.from(playersScores.entries()).map(([ws, score]) => {
-        for (let [w, p] of clients) {
-          if (w === ws) {
-            return { address: w._socket.remoteAddress, score };
-          }
-        }
-        return { address: 'unknown', score };
+      scores: Array.from(playersScores.entries()).map(([w, s]) => {
+        return { address: w._socket.remoteAddress, score: s };
       }),
       remainingCards: Array.from(clients).map(([w, p]) => ({ address: w._socket.remoteAddress, handCount: p.hand.length })),
       tableCards: getTableCards()
@@ -188,6 +196,9 @@ wss.on('connection', (ws) => {
   console.log(`Player connected. Total: ${clients.size}`);
   send(ws, { type: 'welcome', message: 'Добро пожаловать! Подключено игроков: ' + clients.size });
 
+  // Проверка запуска игры
+  tryStartGame();
+
   ws.on('message', (message) => {
     const msg = JSON.parse(message);
     switch (msg.type) {
@@ -211,5 +222,6 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     clients.delete(ws);
     console.log(`Player disconnected. Remaining: ${clients.size}`);
+    // Можно добавить логику для завершения игры
   });
 });
