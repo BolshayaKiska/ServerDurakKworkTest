@@ -3,7 +3,7 @@ const WebSocket = require('ws');
 const port = 8080;
 const maxPlayers = 6;
 
-const suits = ['♠', '♥', '♦', '♣'];
+const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
 const ranks = ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т'];
 
 function createDeck() {
@@ -230,5 +230,6 @@ wss.on('connection', (ws) => {
     // Можно добавить логику для завершения игры
   });
 });
+
 
 
